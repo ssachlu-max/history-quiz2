@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>History Quiz</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f5f4f0;
+      color: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    #quiz-root {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #e0dfd8;
+      padding: 2rem;
+      width: 100%;
+      max-width: 620px;
+    }
+
+    .q-label {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 8px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .q-text {
+      font-size: 20px;
+      font-weight: 500;
+      line-height: 1.5;
+      margin-bottom: 1.5rem;
+    }
+
+    .progress {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 1.25rem;
+    }
+
+    .pip {
+      height: 3px;
+      flex: 1;
+      background: #e0dfd8;
+      border-radius: 2px;
+    }
+    .pip.done { background: #888; }
+    .pip.active { background: #1a1a1a; }
+
+    .options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 1.5rem;
+    }
+
+    .opt {
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 15px;
+      cursor: pointer;
+      text-align: left;
+      line-height: 1.4;
+      transition: background 0.15s;
+    }
+    .opt:hover:not(:disabled) { background: #f5f4f0; }
+    .opt.correct { background: #eaf3de; border-color: #7cb95a; color: #3a6011; }
+    .opt.wrong   { background: #fce8e8; border-color: #e05555; color: #7a1f1f; }
+    .opt.reveal  { background: #eaf3de; border-color: #7cb95a; color: #3a6011; }
+    .opt:disabled { cursor: default; }
+
+    .feedback {
+      font-size: 14px;
+      color: #555;
+      min-height: 48px;
+      margin-bottom: 1rem;
+      line-height: 1.6;
+    }
+
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid #e0dfd8;
+      padding-top: 1rem;
+    }
+
+    .score-bar { display: flex; gap: 16px; }
+    .metric { font-size: 13px; color: #888; }
+    .metric span { font-weight: 500; color: #1a1a1a; }
+
+    .next-btn {
+      background: transparent;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 8px 20px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .next-btn:hover { background: #f5f4f0; }
+
+    .end-card { text-align: center; padding: 2rem 0; }
+    .end-card h2 { font-size: 28px; font-weight: 500; margin-bottom: 8px; }
+    .end-card p { color: #666; margin-bottom: 1.5rem; }
+
+    .restart-btn {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px 28px;
+      font-size: 15px;
+      cursor: pointer;
+      background: transparent;
+    }
+    .restart-btn:hover { background: #f5f4f0; }
+
+    @media (max-width: 480px) {
+      .options { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="quiz-root">
+    <div id="game"></div>
+  </div>
+
+  <script>
+    const questions = [
+      { q: "In what year did World War II end?", opts: ["1943", "1944", "1945", "1946"], ans: 2, fact: "WWII ended in 1945 — VE Day (Victory in Europe) was May 8, and VJ Day (Victory over Japan) was August 15." },
+      { q: "Which ancient wonder was located in Alexandria, Egypt?", opts: ["The Colossus of Rhodes", "The Hanging Gardens", "The Lighthouse of Alexandria", "The Temple of Artemis"], ans: 2, fact: "The Lighthouse of Alexandria stood about 100 meters tall and guided sailors for over 1,500 years before being destroyed by earthquakes." },
+      { q: "Who was the first woman to win a Nobel Prize?", opts: ["Rosalind Franklin", "Marie Curie", "Dorothy Hodgkin", "Ada Lovelace"], ans: 1, fact: "Marie Curie won the Nobel Prize in Physics in 1903, then a second Nobel in Chemistry in 1911, making her the first person to win two." },
+      { q: "The fall of which city in 1453 marked the end of the Byzantine Empire?", opts: ["Athens", "Rome", "Jerusalem", "Constantinople"], ans: 3, fact: "Constantinople fell to Ottoman Sultan Mehmed II in 1453, ending the Byzantine Empire after over 1,000 years." },
+      { q: "Which empire was ruled by Genghis Khan?", opts: ["Ottoman Empire", "Mongol Empire", "Persian Empire", "Ming Dynasty"], ans: 1, fact: "Genghis Khan founded the Mongol Empire around 1206. At its peak it was the largest contiguous land empire in history." },
+      { q: "What sparked the start of World War I?", opts: ["Invasion of Poland", "Assassination of Archduke Franz Ferdinand", "Sinking of the Lusitania", "The Treaty of Versailles"], ans: 1, fact: "The assassination of Archduke Franz Ferdinand in Sarajevo on June 28, 1914 triggered a chain of alliances that led to WWI." },
+      { q: "The ancient city of Machu Picchu was built by which civilization?", opts: ["Aztec", "Maya", "Inca", "Olmec"], ans: 2, fact: "Machu Picchu was built by the Inca civilization around 1450 CE, high in the Andes of Peru." },
+      { q: "In which year did Neil Armstrong walk on the Moon?", opts: ["1967", "1968", "1969", "1971"], ans: 2, fact: "Neil Armstrong and Buzz Aldrin landed on the Moon on July 20, 1969, during the Apollo 11 mission." },
+    ];
+
+    let current = 0, score = 0, answered = false;
+
+    function shuffle(arr) {
+      return [...arr].sort(() => Math.random() - 0.5);
+    }
+
+    const order = shuffle([...Array(questions.length).keys()]);
+
+    function render() {
+      const el = document.getElementById('game');
+      if (current >= order.length) { renderEnd(el); return; }
+      const idx = order[current];
+      const q = questions[idx];
+      el.innerHTML = `
+        <div class="progress">${order.map((_, i) => `<div class="pip ${i < current ? 'done' : i === current ? 'active' : ''}"></div>`).join('')}</div>
+        <div class="q-label">Question ${current + 1} of ${order.length}</div>
+        <div class="q-text">${q.q}</div>
+        <div class="options" id="opts">
+          ${q.opts.map((o, i) => `<button class="opt" id="opt${i}" onclick="pick(${i})">${o}</button>`).join('')}
+        </div>
+        <div class="feedback" id="fb"></div>
+        <div class="footer">
+          <div class="score-bar">
+            <div class="metric">Score <span id="sc">${score}</span></div>
+            <div class="metric">Correct <span>${score}/${current}</span></div>
+          </div>
+          <button class="next-btn" id="nextb" style="display:none" onclick="next()">${current < order.length - 1 ? 'Next →' : 'See results →'}</button>
+        </div>
+      `;
+      answered = false;
+    }
+
+    function pick(i) {
+      if (answered) return;
+      answered = true;
+      const idx = order[current];
+      const q = questions[idx];
+      const correct = q.ans === i;
+      if (correct) score++;
+      document.querySelectorAll('.opt').forEach((b, j) => {
+        b.disabled = true;
+        if (j === q.ans) b.classList.add(correct ? 'correct' : 'reveal');
+        if (j === i && !correct) b.classList.add('wrong');
+      });
+      document.getElementById('fb').textContent = (correct ? '✓ ' : '✗ ') + q.fact;
+      document.getElementById('nextb').style.display = 'inline-block';
+      document.getElementById('sc').textContent = score;
+    }
+
+    function next() {
+      current++;
+      render();
+    }
+
+    function renderEnd(el) {
+      const pct = Math.round((score / order.length) * 100);
+      const msg = pct === 100 ? 'Perfect score — a true historian!' : pct >= 75 ? 'Excellent knowledge!' : pct >= 50 ? 'A solid effort!' : 'History is worth revisiting!';
+      el.innerHTML = `
+        <div class="end-card">
+          <h2>${score} / ${order.length}</h2>
+          <p>${msg} You got ${pct}% correct.</p>
+          <button class="restart-btn" onclick="restart()">Play again</button>
+        </div>
+      `;
+    }
+
+    function restart() {
+      current = 0; score = 0;
+      order.splice(0, order.length, ...shuffle([...Array(questions.length).keys()]));
+      render();
+    }
+
+    render();
+  </script>
+</body>
+</html>
