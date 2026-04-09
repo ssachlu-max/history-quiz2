@@ -15,6 +15,6 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(3000, () => {
+server.listen(process.env.PORT || 3000, () => {
   console.log('Quiz running at http://localhost:3000');
 });
